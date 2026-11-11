@@ -61,12 +61,18 @@ function isTimeout(error: unknown): boolean {
   return error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError');
 }
 
+/** Known OpenRouter HTTP statuses; anything else is a generic upstream error. */
+const STATUS_ERRORS: Record<number, [OpenRouterErrorCode, string]> = {
+  401: ['config', 'OpenRouter rejected the API key (401).'],
+  402: ['insufficient_credits', 'The shared AI pool has run out of credits.'],
+  403: ['config', 'OpenRouter rejected the API key (403).'],
+  408: ['timeout', 'The AI provider timed out.'],
+  429: ['rate_limited', 'The AI provider is rate limiting requests.'],
+};
+
 function errorForStatus(status: number, detail: string): OpenRouterError {
-  if (status === 402) return new OpenRouterError('insufficient_credits', 'The shared AI pool has run out of credits.');
-  if (status === 429) return new OpenRouterError('rate_limited', 'The AI provider is rate limiting requests.');
-  if (status === 408) return new OpenRouterError('timeout', 'The AI provider timed out.');
-  if (status === 401 || status === 403) return new OpenRouterError('config', `OpenRouter rejected the API key (${status}).`);
-  return new OpenRouterError('upstream', `OpenRouter error ${status}: ${detail.slice(0, 200)}`);
+  const [code, message] = STATUS_ERRORS[status] ?? ['upstream', `OpenRouter error ${status}: ${detail.slice(0, 200)}`];
+  return new OpenRouterError(code, message);
 }
 
 /* ------------------------------------------------------------------ */
