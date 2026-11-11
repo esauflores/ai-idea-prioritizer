@@ -5,7 +5,7 @@
 import { env } from 'void/env';
 import { z } from 'zod';
 import { AnalysisSchema, type Analysis, type AnalyzeRequest } from '../shared/schemas';
-import { buildAnalyzeMessages } from './prompts/analyze';
+import { buildAnalyzeMessages } from './prompts/messages';
 import { ANALYSIS_JSON_SCHEMA } from './prompts/response-schema';
 
 export interface KeyUsage {
@@ -25,7 +25,7 @@ const AI_RETRY_MIN_MS = 25_000;
 const KEY_TIMEOUT_MS = 8_000;
 const MAX_OUTPUT_TOKENS = 6_000;
 
-export type AiErrorCode =
+export type OpenRouterErrorCode =
   | 'insufficient_credits'
   | 'rate_limited'
   | 'timeout'
@@ -33,19 +33,19 @@ export type AiErrorCode =
   | 'upstream'
   | 'config';
 
-export class AiError extends Error {
+export class OpenRouterError extends Error {
   constructor(
-    readonly code: AiErrorCode,
+    readonly code: OpenRouterErrorCode,
     message: string,
   ) {
     super(message);
-    this.name = 'AiError';
+    this.name = 'OpenRouterError';
   }
 }
 
 function apiKey(): string {
   const key = env.OPENROUTER_API_KEY?.trim();
-  if (!key) throw new AiError('config', 'OPENROUTER_API_KEY is not configured.');
+  if (!key) throw new OpenRouterError('config', 'OPENROUTER_API_KEY is not configured.');
   return key;
 }
 
@@ -61,12 +61,12 @@ function isTimeout(error: unknown): boolean {
   return error instanceof DOMException && (error.name === 'TimeoutError' || error.name === 'AbortError');
 }
 
-function errorForStatus(status: number, detail: string): AiError {
-  if (status === 402) return new AiError('insufficient_credits', 'The shared AI pool has run out of credits.');
-  if (status === 429) return new AiError('rate_limited', 'The AI provider is rate limiting requests.');
-  if (status === 408) return new AiError('timeout', 'The AI provider timed out.');
-  if (status === 401 || status === 403) return new AiError('config', `OpenRouter rejected the API key (${status}).`);
-  return new AiError('upstream', `OpenRouter error ${status}: ${detail.slice(0, 200)}`);
+function errorForStatus(status: number, detail: string): OpenRouterError {
+  if (status === 402) return new OpenRouterError('insufficient_credits', 'The shared AI pool has run out of credits.');
+  if (status === 429) return new OpenRouterError('rate_limited', 'The AI provider is rate limiting requests.');
+  if (status === 408) return new OpenRouterError('timeout', 'The AI provider timed out.');
+  if (status === 401 || status === 403) return new OpenRouterError('config', `OpenRouter rejected the API key (${status}).`);
+  return new OpenRouterError('upstream', `OpenRouter error ${status}: ${detail.slice(0, 200)}`);
 }
 
 /* ------------------------------------------------------------------ */
@@ -91,7 +91,7 @@ export async function fetchKeyUsage(): Promise<KeyUsage> {
       signal: AbortSignal.timeout(KEY_TIMEOUT_MS),
     });
   } catch (error) {
-    throw isTimeout(error) ? new AiError('timeout', 'OpenRouter key lookup timed out.') : error;
+    throw isTimeout(error) ? new OpenRouterError('timeout', 'OpenRouter key lookup timed out.') : error;
   }
   if (!response.ok) throw errorForStatus(response.status, await response.text().catch(() => ''));
 
@@ -136,7 +136,7 @@ export interface AnalyzeOutcome {
   model: string;
 }
 
-/** One request to OpenRouter; throws AiError on any failure. */
+/** One request to OpenRouter; throws OpenRouterError on any failure. */
 async function attemptAnalysis(request: AnalyzeRequest, model: string, timeoutMs: number): Promise<AnalyzeOutcome> {
   let response: Response;
   try {
@@ -160,14 +160,14 @@ async function attemptAnalysis(request: AnalyzeRequest, model: string, timeoutMs
       }),
     });
   } catch (error) {
-    if (isTimeout(error)) throw new AiError('timeout', 'The analysis took too long. Please try again.');
-    throw new AiError('upstream', 'Could not reach OpenRouter.');
+    if (isTimeout(error)) throw new OpenRouterError('timeout', 'The analysis took too long. Please try again.');
+    throw new OpenRouterError('upstream', 'Could not reach OpenRouter.');
   }
 
   if (!response.ok) throw errorForStatus(response.status, await response.text().catch(() => ''));
 
   const parsed = CompletionSchema.safeParse(await response.json().catch(() => null));
-  if (!parsed.success) throw new AiError('upstream', 'OpenRouter returned an unexpected response.');
+  if (!parsed.success) throw new OpenRouterError('upstream', 'OpenRouter returned an unexpected response.');
   const completion = parsed.data;
 
   if (completion.error) {
@@ -177,20 +177,20 @@ async function attemptAnalysis(request: AnalyzeRequest, model: string, timeoutMs
 
   const choice = completion.choices[0]!;
   if (choice.finish_reason === 'length') {
-    throw new AiError('invalid_output', 'The AI response was cut off. Try a shorter description.');
+    throw new OpenRouterError('invalid_output', 'The AI response was cut off. Try a shorter description.');
   }
 
   let json: unknown;
   try {
     json = extractJson(choice.message.content ?? '');
   } catch {
-    throw new AiError('invalid_output', 'The AI returned malformed JSON. Please try again.');
+    throw new OpenRouterError('invalid_output', 'The AI returned malformed JSON. Please try again.');
   }
 
   const analysis = AnalysisSchema.safeParse(json);
   if (!analysis.success) {
     console.warn('AI output failed validation', z.prettifyError(analysis.error).slice(0, 1000));
-    throw new AiError('invalid_output', 'The AI response was incomplete. Please try again.');
+    throw new OpenRouterError('invalid_output', 'The AI response was incomplete. Please try again.');
   }
 
   return { analysis: analysis.data, model };
@@ -207,7 +207,7 @@ export async function runAnalysis(request: AnalyzeRequest): Promise<AnalyzeOutco
     return await attemptAnalysis(request, model, AI_TIMEOUT_MS);
   } catch (error) {
     const remaining = deadline - Date.now();
-    if (!(error instanceof AiError) || error.code !== 'invalid_output' || remaining < AI_RETRY_MIN_MS) {
+    if (!(error instanceof OpenRouterError) || error.code !== 'invalid_output' || remaining < AI_RETRY_MIN_MS) {
       throw error;
     }
     console.warn(`Retrying analysis after invalid output: ${error.message}`);

@@ -1,4 +1,5 @@
-import type { FrameworkChoice, MoscowCategory, SuggestionType } from '../shared/schemas';
+import { MOSCOW_LABELS } from '../shared/frameworks/moscow';
+import type { FrameworkChoice, SuggestionType } from '../shared/schemas';
 
 /** All UI text in one place. */
 
@@ -75,7 +76,12 @@ export const t = {
     analyzing: 'Analyzing your idea',
     updating: 'Updating the analysis',
     progress: 'Estimated progress',
-    steps: ['Reading your idea', 'Finding features', 'Scoring features', 'Writing next steps'],
+    steps: {
+      read: 'Reading your idea',
+      features: 'Finding features',
+      score: 'Scoring features',
+      write: 'Writing next steps',
+    },
     usual: 'This usually takes about 15 seconds.',
     slow: 'Taking longer than usual. Still working on it.',
   },
@@ -127,18 +133,11 @@ export const t = {
     noEvidence: 'Nothing in your description backs this up yet.',
     assumptions: 'Assumptions',
     noAssumptions: 'None stated.',
-    impactLevels: { 3: 'Massive', 2: 'High', 1: 'Medium', 0.5: 'Low', 0.25: 'Minimal' } as Record<number, string>,
   },
 
-  moscow: {
-    must: 'Must have',
-    should: 'Should have',
-    could: 'Could have',
-    wont: "Won't have for now",
-  } satisfies Record<MoscowCategory, string>,
+  moscow: MOSCOW_LABELS,
 
   errors: {
-    exhausted: 'The shared AI pool has been exhausted. Please try again later.',
     invalid_request: 'Please check your idea and try again.',
     pool_exhausted: 'The shared AI pool has been exhausted. Please try again later.',
     ai_timeout: 'The AI took too long to answer. Please try again.',
@@ -149,7 +148,7 @@ export const t = {
     timeout: 'The request took too long. Please try again.',
     network: 'Network error. Check your connection and try again.',
     generic: 'Something went wrong. Please try again.',
-  } as Record<string, string> & { exhausted: string; generic: string },
+  } as Record<string, string> & { pool_exhausted: string; generic: string },
 };
 
 /** Message for an API error code, falling back to a generic one. */

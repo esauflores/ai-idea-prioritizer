@@ -1,4 +1,5 @@
-import { rankByRice } from './rice';
+import { selectMvp } from './frameworks/moscow';
+import { rankByRice } from './frameworks/rice';
 import type { Analysis, AnalysisResult, FrameworkChoice, PreviousAnalysis } from './schemas';
 
 /** Combine the validated AI analysis with deterministic RICE scores. */
@@ -16,15 +17,11 @@ export function buildResult(
     riceRank: scores.get(feature.id)!.rank,
   }));
 
-  // MVP consistency is enforced in code: every "must" is in, no "could"/"wont".
-  // Including a "should" stays the model's judgment call.
-  const category = new Map(features.map((f) => [f.id, f.moscow.category]));
-  const chosen = analysis.mvp.featureIds.filter((id) => {
-    const c = category.get(id);
-    return c === 'must' || c === 'should';
-  });
-  const missingMusts = features.filter((f) => f.moscow.category === 'must' && !chosen.includes(f.id)).map((f) => f.id);
-  const mvpIds = [...new Set([...chosen, ...missingMusts])];
+  // MVP consistency is enforced in code (see MVP_RULE in moscow.ts).
+  const mvpIds = selectMvp(
+    features.map((f) => ({ id: f.id, category: f.moscow.category })),
+    analysis.mvp.featureIds,
+  );
 
   const { framework, ...rest } = analysis;
   return {

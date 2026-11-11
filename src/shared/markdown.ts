@@ -1,14 +1,6 @@
-import { IMPACT_SCALE } from './rice';
-import { MOSCOW_CATEGORIES, type AnalysisResult, type MoscowCategory } from './schemas';
-
-const MOSCOW_LABELS: Record<MoscowCategory, string> = {
-  must: 'Must have',
-  should: 'Should have',
-  could: 'Could have',
-  wont: "Won't have for now",
-};
-
-const impactLabel = (value: number) => IMPACT_SCALE.find((s) => s.value === value)?.label ?? value;
+import { impactLabel } from './frameworks/rice';
+import { MOSCOW_CATEGORIES, MOSCOW_LABELS } from './frameworks/moscow';
+import type { AnalysisResult } from './schemas';
 
 /** Plain Markdown export of a result, used by the "Copy" button. Shows only the method the result used. */
 export function resultToMarkdown(result: AnalysisResult): string {

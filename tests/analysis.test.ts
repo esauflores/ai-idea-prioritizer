@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildAnalyzeMessages } from '../src/server/prompts/analyze';
+import { buildAnalyzeMessages } from '../src/server/prompts/messages';
 import { EXAMPLE_OUTPUT } from '../src/server/prompts/example';
 import { ANALYSIS_JSON_SCHEMA } from '../src/server/prompts/response-schema';
 import { buildResult } from '../src/shared/result';

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { t } from '../src/client/copy';
-import { IdeaForm, type IdeaDraft } from '../src/components/IdeaForm';
-import { Layout, PoolCaption } from '../src/components/Layout';
-import { LoadingState } from '../src/components/LoadingState';
-import { Results } from '../src/components/Results';
+import { t } from '../src/client/strings';
+import { IdeaForm, type IdeaDraft } from '../src/client/components/IdeaForm';
+import { Layout, PoolCaption } from '../src/client/components/Layout';
+import { LoadingState } from '../src/client/components/LoadingState';
+import { Results } from '../src/client/components/Results';
 // Plain data only (the model's one-shot example); no server code or env is imported.
 import { EXAMPLE_IDEA, EXAMPLE_OUTPUT } from '../src/server/prompts/example';
 import { buildResult } from '../src/shared/result';

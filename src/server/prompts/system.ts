@@ -1,5 +1,5 @@
 import type { FrameworkChoice } from '../../shared/schemas';
-import { CONFIDENCE_VALUES, EFFORT_MAX, EFFORT_MIN, IMPACT_SCALE } from '../../shared/rice';
+import { CONFIDENCE_VALUES, EFFORT_MAX, EFFORT_MIN, IMPACT_SCALE } from '../../shared/frameworks/rice';
 
 /**
  * Mentor persona and an explicit step-by-step procedure.

@@ -7,7 +7,8 @@ import {
   normalizeImpact,
   normalizeReach,
   rankByRice,
-} from '../src/shared/rice';
+} from '../src/shared/frameworks/rice';
+import { normalizeMoscowCategory, selectMvp } from '../src/shared/frameworks/moscow';
 
 describe('calculateRice', () => {
   it('applies (Reach × Impact × Confidence) / Effort', () => {
@@ -100,6 +101,43 @@ describe('rankByRice', () => {
 });
 
 const AT = 1_700_000_000_000;
+
+describe('normalizeMoscowCategory', () => {
+  it('maps loose spellings to a category', () => {
+    expect(normalizeMoscowCategory('Must have')).toBe('must');
+    expect(normalizeMoscowCategory('MUST')).toBe('must');
+    expect(normalizeMoscowCategory('Should-have')).toBe('should');
+    expect(normalizeMoscowCategory("Won't have for now")).toBe('wont');
+    expect(normalizeMoscowCategory('will not')).toBe('wont');
+  });
+
+  it('leaves unknown values for validation to reject', () => {
+    expect(normalizeMoscowCategory('maybe')).toBe('maybe');
+    expect(normalizeMoscowCategory(3)).toBe(3);
+  });
+});
+
+describe('selectMvp', () => {
+  const features = [
+    { id: 'a', category: 'must' as const },
+    { id: 'b', category: 'should' as const },
+    { id: 'c', category: 'could' as const },
+    { id: 'd', category: 'wont' as const },
+    { id: 'e', category: 'must' as const },
+  ];
+
+  it('keeps chosen Musts and Shoulds, drops Coulds, Wonts and unknown ids', () => {
+    expect(selectMvp(features, ['b', 'c', 'd', 'x', 'a'])).toEqual(['b', 'a', 'e']);
+  });
+
+  it('adds every Must even when none were chosen', () => {
+    expect(selectMvp(features, [])).toEqual(['a', 'e']);
+  });
+
+  it('does not repeat ids', () => {
+    expect(selectMvp(features, ['a', 'a', 'b'])).toEqual(['a', 'b', 'e']);
+  });
+});
 
 describe('toPoolStatus', () => {
   it('reports remaining and limit from a capped key', () => {

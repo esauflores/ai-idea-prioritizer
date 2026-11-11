@@ -21,6 +21,11 @@ export const IMPACT_SCALE = [
   { value: 0.25, label: 'Minimal' },
 ] as const;
 
+/** Word for an impact value, e.g. 2 → "High". */
+export function impactLabel(value: number): string {
+  return IMPACT_SCALE.find((s) => s.value === value)?.label ?? String(value);
+}
+
 export const IMPACT_VALUES = IMPACT_SCALE.map((s) => s.value);
 export const CONFIDENCE_VALUES = [1, 0.8, 0.5] as const;
 

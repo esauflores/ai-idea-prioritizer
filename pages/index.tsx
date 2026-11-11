@@ -1,19 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiError, analyze, getUsage } from '../src/client/api';
-import { errorMessage, t } from '../src/client/copy';
-import { IdeaForm, type IdeaDraft } from '../src/components/IdeaForm';
-import { Layout, PoolCaption } from '../src/components/Layout';
-import { LoadingState } from '../src/components/LoadingState';
-import { Results } from '../src/components/Results';
+import { useRouter } from '@void/react';
+import { useEffect, useRef, useState } from 'react';
+import { ApiError, analyze } from '../src/client/api';
+import { errorMessage, t } from '../src/client/strings';
+import { IdeaForm, type IdeaDraft } from '../src/client/components/IdeaForm';
+import { Layout, PoolCaption } from '../src/client/components/Layout';
+import { LoadingState } from '../src/client/components/LoadingState';
+import { Results } from '../src/client/components/Results';
 import { toPrevious } from '../src/shared/result';
 import type { AnalysisResult, AnalyzeRequest, PoolStatus } from '../src/shared/schemas';
+import type { Props } from './index.server';
 import './style.css';
 
 const EMPTY_DRAFT: IdeaDraft = { idea: '', targetUser: '', problem: '', framework: 'auto' };
 
 type View = 'form' | 'results';
 
-export default function HomePage() {
+export default function HomePage({ pool: loadedPool }: Props) {
+  const router = useRouter();
   const [view, setView] = useState<View>('form');
   const [draft, setDraft] = useState<IdeaDraft>(EMPTY_DRAFT);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -21,24 +24,24 @@ export default function HomePage() {
   const [pending, setPending] = useState<null | 'analyze' | 'refine'>(null);
   const [errorCode, setErrorCode] = useState<string | null>(null);
   const error = errorCode ? errorMessage(errorCode) : null;
-  const [pool, setPool] = useState<PoolStatus | null>(null);
-  const [poolLoading, setPoolLoading] = useState(true);
+  const [pool, setPool] = useState<PoolStatus>(loadedPool);
+  const [poolLoading, setPoolLoading] = useState(false);
   const inFlight = useRef(false);
 
-  const refreshPool = useCallback(async () => {
+  // The loader's value wins whenever the page data is re-fetched.
+  useEffect(() => setPool(loadedPool), [loadedPool]);
+
+  /** Re-run the page loader (server-side pool status); page state is preserved. */
+  async function refreshPool() {
     setPoolLoading(true);
     try {
-      setPool(await getUsage());
+      await router.refresh();
     } catch {
-      // Keep the last known value; the indicator shows "Usage unavailable" if there is none.
+      // Keep the last known value.
     } finally {
       setPoolLoading(false);
     }
-  }, []);
-
-  useEffect(() => {
-    void refreshPool();
-  }, [refreshPool]);
+  }
 
   const exhausted = pool?.state === 'exhausted';
 
@@ -94,7 +97,7 @@ export default function HomePage() {
         key={result.idea + result.features.map((f) => f.id).join()}
         result={result}
         error={error}
-        refineDisabledReason={exhausted ? t.errors.exhausted : null}
+        refineDisabledReason={exhausted ? t.errors.pool_exhausted : null}
         onReset={newIdea}
         onRefine={(feedback) =>
           lastRequest && run({ ...lastRequest, refinement: feedback, previous: toPrevious(result) }, 'refine')
@@ -105,7 +108,7 @@ export default function HomePage() {
     content = (
       <IdeaForm
         draft={draft}
-        disabledReason={exhausted ? t.errors.exhausted : null}
+        disabledReason={exhausted ? t.errors.pool_exhausted : null}
         error={error}
         footer={<PoolCaption status={pool} loading={poolLoading} />}
         onChange={setDraft}

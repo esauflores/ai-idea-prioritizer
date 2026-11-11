@@ -63,16 +63,17 @@ bun run deploy
 
 ```
 pages/index.tsx            Single page: input screen ↔ results screen (client state only)
-src/components/            IdeaForm, Results (RICE / MoSCoW), LoadingState, Layout (header + pool status)
+src/client/components/     IdeaForm, Results, FeatureList (RICE / MoSCoW), LoadingState, Layout (header + pool status)
 src/client/api.ts          Typed calls to the two API routes
+src/client/strings.ts         All UI text, including error messages (the API returns error codes only)
 routes/api/analyze.ts      POST: validate → balance check → OpenRouter → validate → score
-routes/api/usage.ts        GET: sanitized shared-pool status
+pages/index.server.ts      Page loader: sanitized shared-pool status (no public endpoint)
 src/server/pool.ts         Shared pool status from OpenRouter /key (cached)
 src/server/openrouter.ts   OpenRouter client (chat completions + /key), timeouts, error mapping
 src/server/prompts/        System prompt + RICE/MoSCoW guides, output shape, JSON schema, one-shot example
-src/shared/rice.ts         RICE scales and deterministic scoring (unit tested)
+src/shared/frameworks/     rice.ts (scales, scoring) and moscow.ts (categories, MVP rule), unit tested
 src/shared/schemas.ts      Zod schemas for requests and AI responses
-src/shared/result.ts       Scores the analysis and enforces MVP rules (unit tested)
+src/shared/result.ts       Combines the AI analysis with RICE scores and the MVP rule (unit tested)
 pages/preview.dev.tsx      Dev-only preview of each screen: /preview?view=form|loading|results
 ```
 
@@ -98,7 +99,7 @@ The OpenRouter key's **credit limit is the hard stop**: once it is reached, Open
 - **Minimal public data.** The browser receives only `state`, `limit`, `remaining`, `reset` and `updatedAt`, never the key or account metadata.
 - **Bounded requests.** Idea ≤ 2,000 characters, refinement ≤ 600, output ≤ 6,000 tokens (reasoning disabled), 45 s per attempt, 75 s total.
 - **No double submits.** The Analyze button is disabled while a request runs.
-- **Clear failures.** `402` marks the pool exhausted; `429`, timeouts and malformed output map to friendly messages. No fallback key is ever used.
+- **Clear failures.** `402` marks the pool exhausted; `429`, timeouts and malformed output map to error codes that the page shows as friendly messages. No fallback key is ever used.
 
 There is intentionally no per-visitor rate limiting: someone could spend the pool quickly, but never more than the key's limit.
 

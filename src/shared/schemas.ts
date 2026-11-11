@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { normalizeConfidence, normalizeEffort, normalizeImpact, normalizeReach } from './rice';
+import { MOSCOW_CATEGORIES, normalizeMoscowCategory } from './frameworks/moscow';
+import { normalizeConfidence, normalizeEffort, normalizeImpact, normalizeReach } from './frameworks/rice';
 
 /* ------------------------------------------------------------------ */
 /* Limits shared by client and server                                  */
@@ -10,15 +11,13 @@ export const IDEA_MAX_CHARS = 2000;
 export const REFINEMENT_MAX_CHARS = 600;
 export const DETAIL_MAX_CHARS = 200;
 
-export const FRAMEWORKS = ['auto', 'rice', 'moscow'] as const;
-export type FrameworkChoice = (typeof FRAMEWORKS)[number];
+export const FRAMEWORK_CHOICES = ['auto', 'rice', 'moscow'] as const;
+export type FrameworkChoice = (typeof FRAMEWORK_CHOICES)[number];
 export type Framework = Exclude<FrameworkChoice, 'auto'>;
 
 export const SUGGESTION_TYPES = ['clarify', 'test', 'differentiate', 'scope'] as const;
 export type SuggestionType = (typeof SUGGESTION_TYPES)[number];
 
-export const MOSCOW_CATEGORIES = ['must', 'should', 'could', 'wont'] as const;
-export type MoscowCategory = (typeof MOSCOW_CATEGORIES)[number];
 
 /* ------------------------------------------------------------------ */
 /* AI response schema                                                  */
@@ -79,10 +78,7 @@ const FeatureSchema = z.object({
   whyItMatters: text(400),
   rice: RiceEstimateSchema,
   moscow: z.object({
-    category: z.preprocess(
-      (v) => (typeof v === 'string' ? v.toLowerCase().replace(/[^a-z]/g, '').replace(/have.*$/, '') : v),
-      z.enum(MOSCOW_CATEGORIES),
-    ),
+    category: z.preprocess(normalizeMoscowCategory, z.enum(MOSCOW_CATEGORIES)),
     reasoning: text(400),
   }),
 });
@@ -178,7 +174,7 @@ export const AnalyzeRequestSchema = z.object({
     .trim()
     .min(IDEA_MIN_CHARS, `Describe your idea in at least ${IDEA_MIN_CHARS} characters.`)
     .max(IDEA_MAX_CHARS, `Keep your idea under ${IDEA_MAX_CHARS} characters.`),
-  framework: z.enum(FRAMEWORKS),
+  framework: z.enum(FRAMEWORK_CHOICES),
   /** Optional details from the form; treated like the idea text. */
   targetUser: z.string().trim().max(DETAIL_MAX_CHARS).optional(),
   problem: z.string().trim().max(DETAIL_MAX_CHARS).optional(),
@@ -224,6 +220,7 @@ export type ApiErrorCode =
   | 'config_error';
 
 export interface ApiErrorBody {
-  error: { code: ApiErrorCode; message: string };
+  /** The client maps the code to its own text (src/client/strings.ts). */
+  error: { code: ApiErrorCode };
   pool?: PoolStatus;
 }

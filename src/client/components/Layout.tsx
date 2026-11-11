@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { t } from '../client/copy';
-import type { PoolStatus } from '../shared/schemas';
+import { t } from '../strings';
+import type { PoolState, PoolStatus } from '../../shared/schemas';
 import { LogoMark, Refresh } from './Icons';
 
 interface Props {
@@ -39,11 +39,19 @@ export function Layout({ pool, poolLoading, onRefreshPool, onHome, children }: P
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
 
+const amountLeft = (s: PoolStatus) => t.pool.left(usd(s.remaining ?? 0), usd(s.limit ?? 0));
+
+/** Text and meter colour for each pool state. */
+const POOL_VIEW: Record<PoolState, { text: (s: PoolStatus) => string; bar: (percent: number) => string }> = {
+  ok: { text: amountLeft, bar: (percent) => (percent < 20 ? 'bg-warn' : 'bg-accent') },
+  exhausted: { text: amountLeft, bar: () => 'bg-danger' },
+  no_cap: { text: () => t.pool.noLimit, bar: () => 'bg-accent' },
+  unavailable: { text: () => t.pool.unavailable, bar: () => 'bg-accent' },
+};
+
 function poolText(status: PoolStatus | null, loading: boolean): string {
   if (!status) return loading ? t.pool.checking : t.pool.unavailable;
-  if (status.state === 'no_cap') return t.pool.noLimit;
-  if (status.state === 'unavailable') return t.pool.unavailable;
-  return t.pool.left(usd(status.remaining ?? 0), usd(status.limit ?? 0));
+  return POOL_VIEW[status.state].text(status);
 }
 
 function percentOf(status: PoolStatus | null): number | null {
@@ -62,7 +70,6 @@ interface PoolIndicatorProps {
 function PoolIndicator({ status, loading, onRefresh }: PoolIndicatorProps) {
   const text = poolText(status, loading);
   const percent = percentOf(status);
-  const bar = status?.state === 'exhausted' ? 'bg-danger' : percent !== null && percent < 20 ? 'bg-warn' : 'bg-accent';
 
   return (
     <button
@@ -75,9 +82,9 @@ function PoolIndicator({ status, loading, onRefresh }: PoolIndicatorProps) {
     >
       <span className="hidden text-faint sm:inline">{t.pool.label}</span>
       <span className="font-medium text-fg tabular-nums">{text}</span>
-      {percent !== null && (
+      {status && percent !== null && (
         <span className="h-1 w-12 overflow-hidden rounded-full bg-white/10">
-          <span className={`block h-full transition-[width] duration-500 ${bar}`} style={{ width: `${percent}%` }} />
+          <span className={`block h-full transition-[width] duration-500 ${POOL_VIEW[status.state].bar(percent)}`} style={{ width: `${percent}%` }} />
         </span>
       )}
       <Refresh size={12} className={`shrink-0 text-faint group-hover:text-fg ${loading ? 'animate-spin' : ''}`} />

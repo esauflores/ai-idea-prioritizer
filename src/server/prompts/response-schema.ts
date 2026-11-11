@@ -5,8 +5,9 @@
  * Strict mode requires every property to be listed in `required` and
  * `additionalProperties: false` on every object.
  */
-import { CONFIDENCE_VALUES, IMPACT_VALUES } from '../../shared/rice';
-import { MOSCOW_CATEGORIES, SUGGESTION_TYPES } from '../../shared/schemas';
+import { CONFIDENCE_VALUES, IMPACT_VALUES } from '../../shared/frameworks/rice';
+import { MOSCOW_CATEGORIES } from '../../shared/frameworks/moscow';
+import { SUGGESTION_TYPES } from '../../shared/schemas';
 
 type JsonSchema = Record<string, unknown>;
 

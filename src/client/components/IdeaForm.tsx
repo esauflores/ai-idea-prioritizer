@@ -1,12 +1,12 @@
 import { useEffect, useId, useRef } from 'react';
-import { t } from '../client/copy';
+import { t } from '../strings';
 import {
   DETAIL_MAX_CHARS,
-  FRAMEWORKS,
+  FRAMEWORK_CHOICES,
   IDEA_MAX_CHARS,
   IDEA_MIN_CHARS,
   type FrameworkChoice,
-} from '../shared/schemas';
+} from '../../shared/schemas';
 
 export interface IdeaDraft {
   idea: string;
@@ -123,7 +123,7 @@ export function IdeaForm({ draft, disabledReason, error, footer, onChange, onSub
           <fieldset className="flex flex-col gap-1.5">
             <legend className="label mb-1.5">{t.form.method}</legend>
             <div role="radiogroup" aria-label={t.form.method} className="inline-flex w-fit rounded-md border border-line-strong p-0.5">
-              {FRAMEWORKS.map((value) => {
+              {FRAMEWORK_CHOICES.map((value) => {
                 const active = draft.framework === value;
                 return (
                   <button
