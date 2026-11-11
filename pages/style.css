@@ -1,0 +1,94 @@
+@import 'tailwindcss';
+
+@source '../src';
+
+/*
+ * Deliberately plain: neutral warm greys, one accent used only for data (scores, MVP),
+ * no gradients, glows or glass. Primary actions are solid light-on-dark.
+ */
+@theme {
+  --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bg: #131312;
+  --color-panel: #191918;
+  --color-input: #1b1b1a;
+  --color-line: #2a2a27;
+  --color-line-strong: #3b3b37;
+  --color-fg: #ecebe6;
+  --color-muted: #a9a8a0;
+  --color-faint: #76756e;
+  --color-accent: #6cc495;
+  --color-accent-ink: #0d1f15;
+  --color-warn: #e0b45e;
+  --color-danger: #e5867c;
+
+  --animate-fade-in: fade-in 200ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background: var(--color-bg);
+  }
+
+  body {
+    @apply min-h-dvh bg-bg font-sans text-[15px] text-fg antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-accent) 35%, transparent);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-fg);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+@layer components {
+  .panel {
+    @apply rounded-md border border-line bg-panel;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-fg font-medium text-bg transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-35;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-white/[0.05] hover:text-fg;
+  }
+
+  .field {
+    @apply w-full rounded-md border border-line-strong bg-input px-3 py-2 text-fg transition-colors placeholder:text-faint focus:border-muted focus:outline-none;
+  }
+
+  .label {
+    @apply text-sm font-medium text-fg;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] tracking-wide text-faint uppercase;
+  }
+}
